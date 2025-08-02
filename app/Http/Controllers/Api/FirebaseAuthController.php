@@ -34,21 +34,27 @@ class FirebaseAuthController extends Controller
             $user = User::where('firebase_uid', $uid)->first();
 
             if (!$user) {
-                // إنشاء مستخدم جديد بناءً على بيانات Firebase
+                // إنشاء مستخدم جديد
                 $user = User::create([
-                    'name' => $firebaseUser->displayName ?? 'User',
-                    'email' => $firebaseUser->email ?? $uid.'@firebase.local',
+                    'name'         => $firebaseUser->displayName ?? 'User',
+                    'email'        => $firebaseUser->email ?? $uid . '@firebase.local',
                     'firebase_uid' => $uid,
-                    'password' => Hash::make(uniqid()), // كلمة مرور وهمية
+                    'password'     => Hash::make(uniqid()),
                 ]);
             }
 
-            // تسجيل الدخول باستخدام Laravel
+            // إذا وُجد رقم هاتف، خزّنه
+            $phone = $verifiedIdToken->claims()->get('phone_number') ?? null;
+            if ($phone && $user->phone !== $phone) {
+                $user->phone = $phone;
+                $user->save();
+            }
+
             Auth::login($user);
 
             return response()->json([
                 'message' => 'تم التحقق بنجاح',
-                'user' => $user,
+                'user'    => $user,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
