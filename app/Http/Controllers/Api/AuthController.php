@@ -15,9 +15,60 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
 use App\Notifications\VerifyEmailNotification;
+use Kreait\Firebase\Auth as FirebaseAuth;
+use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 
 class AuthController extends Controller
 {
+    public function firebaseAuthenticate(Request $request, FirebaseAuth $firebaseAuth)
+    {
+        // 1. استخرج التوكن من الهيدر
+        $authHeader = $request->header('Authorization');
+
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return response()->json(['message' => 'Missing or invalid Authorization header'], 401);
+        }
+
+        $idToken = trim(str_replace('Bearer', '', $authHeader));
+
+        try {
+            // 2. تحقق من التوكن
+            $verifiedIdToken = $firebaseAuth->verifyIdToken($idToken);
+            $uid = $verifiedIdToken->claims()->get('sub');
+
+            // 3. جلب معلومات المستخدم من Firebase
+            $firebaseUser = $firebaseAuth->getUser($uid);
+            $email = $firebaseUser->email ?? null;
+            $displayName = $firebaseUser->displayName ?? 'user_' . substr($uid, 0, 6);
+
+            // 4. البحث عن المستخدم في Laravel
+            $user = User::where('firebase_uid', $uid)->first();
+
+            if (!$user) {
+                // 5. إنشاء مستخدم جديد
+                $user = User::create([
+                    'firebase_uid' => $uid,
+                    'email'        => $email,
+                    'username'     => $displayName,
+                    'role'         => 'user',
+                    'status'       => 'active',
+                    'user_mode'    => 'free',
+                ]);
+            }
+
+            // 6. إصدار توكن Sanctum
+            $token = $user->createToken('firebase_token')->plainTextToken;
+
+            return response()->json([
+                'token' => $token,
+                'user'  => $user,
+            ]);
+        } catch (FailedToVerifyToken $e) {
+            return response()->json(['message' => 'Invalid Firebase ID token'], 401);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Firebase error', 'error' => $e->getMessage()], 500);
+        }
+    }
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
@@ -36,37 +87,37 @@ class AuthController extends Controller
     }
 
     public function register(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'username' => 'required|string|max:255|unique:users',
-        'email'    => 'required|string|email|max:255|unique:users',
-        'phone'    => 'nullable|string|unique:users',
-        'password' => 'required|string|min:6',
-    ]);
+    {
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|max:255|unique:users',
+            'email'    => 'required|string|email|max:255|unique:users',
+            'phone'    => 'nullable|string|unique:users',
+            'password' => 'required|string|min:6',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // 1. إنشاء المستخدم
+        $user = User::create([
+            'username' => $request->username,
+            'email'    => $request->email,
+            'phone'    => $request->phone,
+            'password' => Hash::make($request->password),
+        ]);
+
+        // 2. إرسال رسالة التفعيل
+        $user->notify(new VerifyEmailNotification());
+
+        // 3. توليد التوكن ورجعه
+        $token = $user->createToken('app_token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => $user
+        ], 201);
     }
-
-    // 1. إنشاء المستخدم
-    $user = User::create([
-        'username' => $request->username,
-        'email'    => $request->email,
-        'phone'    => $request->phone,
-        'password' => Hash::make($request->password),
-    ]);
-
-    // 2. إرسال رسالة التفعيل
-    $user->notify(new VerifyEmailNotification());
-
-    // 3. توليد التوكن ورجعه
-    $token = $user->createToken('app_token')->plainTextToken;
-
-    return response()->json([
-        'token' => $token,
-        'user'  => $user
-    ], 201);
-}
 
 
     public function profile(Request $request)
@@ -76,7 +127,7 @@ class AuthController extends Controller
         ]);
     }
 
-   /**
+    /**
      * تحديث البيانات النصّية فقط
      */
     public function updateProfileData(Request $request)
@@ -84,10 +135,10 @@ class AuthController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'username'  => ['required','string','max:255', Rule::unique('users','username')->ignore($user->id)],
-            'email'     => ['required','email','max:255',    Rule::unique('users','email')->ignore($user->id)],
-            'phone'     => ['nullable','string','max:255'],
-            'job_title' => ['nullable','string','max:255'],
+            'username'  => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
+            'email'     => ['required', 'email', 'max:255',    Rule::unique('users', 'email')->ignore($user->id)],
+            'phone'     => ['nullable', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user->update($data);
@@ -106,7 +157,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'profile_image' => ['required','image','max:2048'],
+            'profile_image' => ['required', 'image', 'max:2048'],
         ]);
 
         // احذف الصورة القديمة (إن وُجدت)
@@ -115,7 +166,7 @@ class AuthController extends Controller
         }
 
         $path = $request->file('profile_image')
-                        ->store('avatars','public');
+            ->store('avatars', 'public');
 
         $user->update(['profile_image' => $path]);
 

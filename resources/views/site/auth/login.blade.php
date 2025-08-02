@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('site.login') }} / {{ __('site.register') }}</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{{ asset('css/eyad.css') }}">
     <style>
         /* --- بداية eyad.css --- */
         @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
@@ -64,7 +63,8 @@
             color: #333;
             text-align: center;
             padding: 40px;
-            z-index: 1;
+            z-index: 3;
+            /* رفع فوق overlay */
             transition: 0.6s ease-in-out 1.2s, visibility 0s 1s;
         }
 
@@ -108,15 +108,6 @@
             top: 50%;
             transform: translateY(-50%);
             font-size: 20px;
-        }
-
-        .forgot-link {
-            margin: -15px 0 15px;
-        }
-
-        .forgot-link a {
-            font-size: 14.5px;
-            color: #333;
         }
 
         .btn {
@@ -163,6 +154,7 @@
             border-radius: 150px;
             z-index: 2;
             transition: 1.8s ease-in-out;
+            pointer-events: none;
         }
 
         .container.active .toggle-box::before {
@@ -277,21 +269,12 @@
             }
         }
 
-        .toggle-box::before {
-            pointer-events: none;
-        }
-        .toggle-box::before {
-  pointer-events: none;
-}
-
-/* ترفع نماذج الدخول/التسجيل فوق الـ overlay */
-.form-box {
-  z-index: 3;
-}
-
-
         /* --- نهاية eyad.css --- */
     </style>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth.js"></script>
 </head>
 
 <body>
@@ -299,48 +282,50 @@
 
         <!-- Login Form -->
         <div class="form-box login">
-            <form method="POST" action="{{ route('site.login') }}">
+            <form onsubmit="event.preventDefault(); loginWithEmail();">
                 @csrf
                 <h1>{{ __('site.login') }}</h1>
                 <div class="input-box">
-                    <input type="email" name="email" placeholder="{{ __('site.email') }}" required>
+                    <input type="email" id="login_email" name="email" placeholder="{{ __('site.email') }}" required>
                     <i class='bx bxs-user'></i>
                 </div>
                 <div class="input-box">
-                    <input type="password" name="password" placeholder="{{ __('site.password') }}" required>
+                    <input type="password" id="login_password" name="password" placeholder="{{ __('site.password') }}"
+                        required>
                     <i class='bx bxs-lock-alt'></i>
                 </div>
                 <button type="submit" class="btn">{{ __('site.login') }}</button>
 
                 <p>{{ __('site.or_social') }}</p>
                 <div class="social-icons">
-                    <a href="{{ route('site.social.redirect', ['provider' => 'google']) }}"><i
-                            class='bx bxl-google'></i></a>
-                    <a href="{{ route('site.social.redirect', ['provider' => 'facebook']) }}"><i
-                            class='bx bxl-facebook'></i></a>
+                    <a href="#" onclick="loginWithGoogle()"><i class='bx bxl-google'></i></a>
+                    <a href="#" onclick="loginWithFacebook()"><i class='bx bxl-facebook'></i></a>
                 </div>
             </form>
         </div>
 
         <!-- Registration Form -->
         <div class="form-box register">
-            <form method="POST" action="{{ route('site.register') }}">
+            <form onsubmit="event.preventDefault(); registerWithEmail();">
                 @csrf
                 <h1>{{ __('site.register') }}</h1>
                 <div class="input-box">
-                    <input type="text" name="name" placeholder="{{ __('site.name') }}" required>
+                    <input type="text" id="register_username" name="name" placeholder="{{ __('site.name') }}"
+                        required>
                     <i class='bx bxs-user'></i>
                 </div>
                 <div class="input-box">
-                    <input type="email" name="email" placeholder="{{ __('site.email') }}" required>
+                    <input type="email" id="register_email" name="email" placeholder="{{ __('site.email') }}"
+                        required>
                     <i class='bx bxs-envelope'></i>
                 </div>
                 <div class="input-box">
-                    <input type="password" name="password" placeholder="{{ __('site.password') }}" required>
+                    <input type="password" id="register_password" name="password"
+                        placeholder="{{ __('site.password') }}" required>
                     <i class='bx bxs-lock-alt'></i>
                 </div>
                 <div class="input-box">
-                    <input type="password" name="password_confirmation"
+                    <input type="password" id="register_password_confirm" name="password_confirmation"
                         placeholder="{{ __('site.password_confirmation') }}" required>
                     <i class='bx bxs-lock-alt'></i>
                 </div>
@@ -348,57 +333,139 @@
 
                 <p>{{ __('site.or_social') }}</p>
                 <div class="social-icons">
-                    <a href="{{ route('site.social.redirect', ['provider' => 'google']) }}"><i
-                            class='bx bxl-google'></i></a>
-                    <a href="{{ route('site.social.redirect', ['provider' => 'facebook']) }}"><i
-                            class='bx bxl-facebook'></i></a>
+                    <a href="#" onclick="loginWithGoogle()"><i class='bx bxl-google'></i></a>
+                    <a href="#" onclick="loginWithFacebook()"><i class='bx bxl-facebook'></i></a>
                 </div>
             </form>
         </div>
 
-       <!-- Toggle Panels -->
-<div class="toggle-box">
-  <div class="toggle-panel toggle-left">
-    <h1>{{ __('site.welcome') }}</h1>
-    <p>{{ __('site.no_account') }}</p>
-    <!-- أضفنا id هنا -->
-    <button type="button" id="toggleRegisterBtn" class="btn register-btn">{{ __('site.register') }}</button>
-  </div>
-  <div class="toggle-panel toggle-right">
-    <h1>{{ __('site.welcome_back') }}</h1>
-    <p>{{ __('site.already_have_account') }}</p>
-    <!-- وأيضاً هنا -->
-    <button type="button" id="toggleLoginBtn" class="btn login-btn">{{ __('site.login') }}</button>
-  </div>
-</div>
+        <!-- Toggle Panels -->
+        <div class="toggle-box">
+            <div class="toggle-panel toggle-left">
+                <h1>{{ __('site.welcome') }}</h1>
+                <p>{{ __('site.no_account') }}</p>
+                <button type="button" id="toggleRegisterBtn"
+                    class="btn register-btn">{{ __('site.register') }}</button>
+            </div>
+            <div class="toggle-panel toggle-right">
+                <h1>{{ __('site.welcome_back') }}</h1>
+                <p>{{ __('site.already_have_account') }}</p>
+                <button type="button" id="toggleLoginBtn" class="btn login-btn">{{ __('site.login') }}</button>
+            </div>
+        </div>
 
     </div>
 
-   <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const container       = document.querySelector('.container');
-    const registerToggle  = document.getElementById('toggleRegisterBtn');
-    const loginToggle     = document.getElementById('toggleLoginBtn');
+    <!-- Toggle Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            const registerToggle = document.getElementById('toggleRegisterBtn');
+            const loginToggle = document.getElementById('toggleLoginBtn');
 
-    // تأكد من جاهزية العناصر
-    console.log('registerToggle:', registerToggle, 'loginToggle:', loginToggle);
+            // إذا الرابط يحتوي #register، اعرض فورم التسجيل فورًا
+            if (window.location.hash === '#register') {
+                container.classList.add('active');
+            }
 
-    // إذا الرابط يحتوي #register، اعرض فورم التسجيل فورًا
-    if (window.location.hash === '#register') {
-      container.classList.add('active');
-    }
+            registerToggle.addEventListener('click', () => {
+                container.classList.add('active');
+            });
 
-    registerToggle.addEventListener('click', () => {
-      container.classList.add('active');
-    });
+            loginToggle.addEventListener('click', () => {
+                container.classList.remove('active');
+            });
+        });
+    </script>
 
-    loginToggle.addEventListener('click', () => {
-      container.classList.remove('active');
-    });
-  });
-</script>
+    <!-- Firebase Initialization -->
+    <script>
+        import('https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js').then(({
+                    initializeApp
+                }) => {
+                    import('https://www.gstatic.com/firebasejs/9.24.0/firebase-auth.js').then(({
+                                getAuth,
+                                signInWithEmailAndPassword,
+                                createUserWithEmailAndPassword,
+                                signInWithPopup,
+                                GoogleAuthProvider,
+                                FacebookAuthProvider,
+                                updateProfile
+                            }) => {
 
+                                const firebaseConfig = {
+                                    apiKey: "AIzaSyCsy_PL59WigJO7rUw_fjOgqVTuGjdrWio",
+                                    authDomain: "obd-code-hub.firebaseapp.com",
+                                    projectId: "obd-code-hub",
+                                };
+                                firebase.initializeApp(firebaseConfig);
+                                const auth = firebase.auth();
+    </script>
 
+    <!-- Firebase Auth Functions -->
+    <script>
+        async function sendTokenToServer(idToken) {
+            const res = await fetch("/api/firebase-auth", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + idToken
+                }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                window.location.href = "/";
+            } else {
+                alert(data.message || "فشل التحقق من الخادم");
+            }
+        }
+
+        function loginWithEmail() {
+            const email = document.getElementById("login_email").value;
+            const password = document.getElementById("login_password").value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => userCredential.user.getIdToken())
+                .then(sendTokenToServer)
+                .catch(err => alert(err.message));
+        }
+
+        function registerWithEmail() {
+            const username = document.getElementById("register_username").value;
+            const email = document.getElementById("register_email").value;
+            const password = document.getElementById("register_password").value;
+            const confirm = document.getElementById("register_password_confirm").value;
+
+            if (password !== confirm) {
+                return alert("كلمة المرور وتأكيدها غير متطابقين");
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    return userCredential.user.updateProfile({
+                            displayName: username
+                        })
+                        .then(() => userCredential.user.getIdToken());
+                })
+                .then(sendTokenToServer)
+                .catch(err => alert(err.message));
+        }
+
+        function loginWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then(result => result.user.getIdToken())
+                .then(sendTokenToServer)
+                .catch(err => alert(err.message));
+        }
+
+        function loginWithFacebook() {
+            const provider = new firebase.auth.FacebookAuthProvider();
+            auth.signInWithPopup(provider)
+                .then(result => result.user.getIdToken())
+                .then(sendTokenToServer)
+                .catch(err => alert(err.message));
+        }
+    </script>
 </body>
 
 </html>

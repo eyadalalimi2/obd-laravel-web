@@ -12,6 +12,7 @@ use App\Http\Controllers\Site\AuthController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Site\EmailVerificationController as WebVerification;
 // جميع المسارات تعمل مع اللغة المخزنة في الجلسة (en بشكل افتراضي)
+Route::post('/api/firebase-auth', [AuthController::class, 'firebaseAuth']);
 
 // الصفحة الرئيسية
 Route::get('/', [HomeController::class, 'index'])->name('site.home');

@@ -200,7 +200,7 @@ return [
         App\Providers\RouteServiceProvider::class,
 
     ],
-    
+
 
     /*
     |--------------------------------------------------------------------------
@@ -214,7 +214,7 @@ return [
     */
 
     'aliases' => Facade::defaultAliases()->merge([
-        // 'ExampleClass' => App\Example\ExampleClass::class,
+        'Firebase' => Kreait\Laravel\Firebase\Facades\Firebase::class,
     ])->toArray(),
 
 ];

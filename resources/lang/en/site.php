@@ -30,6 +30,7 @@ return [
     'email' => 'Email',
     'password' => 'Password',
     'password_confirmation' => 'Confirm Password',
+    'password_mismatch' => 'Passwords do not match.',
     'name' => 'Name',
     'no_account' => 'Don\'t have an account? Register',
     'already_have_account' => 'Already have an account? Login',

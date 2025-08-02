@@ -30,6 +30,7 @@ return [
     'email' => 'البريد الإلكتروني',
     'password' => 'كلمة المرور',
     'password_confirmation' => 'تأكيد كلمة المرور',
+    'password_mismatch' => 'كلمات المرور غير متطابقة.',
     'name' => 'الاسم',
     'no_account' => 'ليس لديك حساب؟ إنشاء حساب جديد',
     'already_have_account' => 'لديك حساب بالفعل؟ تسجيل الدخول',

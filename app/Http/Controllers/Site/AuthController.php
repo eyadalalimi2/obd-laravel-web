@@ -8,15 +8,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Facades\Socialite;
-
+use Kreait\Firebase\Auth as FirebaseAuth;
 
 class AuthController extends Controller
 {
+    protected FirebaseAuth $firebaseAuth;
+
+    public function __construct(FirebaseAuth $firebaseAuth)
+    {
+        $this->firebaseAuth = $firebaseAuth;
+    }
+
     public function loginForm()
     {
         return view('site.auth.login');
     }
-
 
     public function login(Request $request)
     {
@@ -81,5 +87,44 @@ class AuthController extends Controller
         Auth::login($user);
 
         return redirect()->route('site.home');
+    }
+
+    /**
+     * تسجيل الدخول باستخدام Firebase ID Token
+     */
+    public function firebaseAuth(Request $request)
+    {
+        try {
+            $idToken = $request->bearerToken();
+
+            if (!$idToken) {
+                return response()->json(['message' => 'Missing ID token'], 401);
+            }
+
+            $verifiedIdToken = $this->firebaseAuth->verifyIdToken($idToken);
+            $uid = $verifiedIdToken->claims()->get('sub');
+            $firebaseUser = $this->firebaseAuth->getUser($uid);
+
+            $user = User::where('firebase_uid', $uid)->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'firebase_uid' => $uid,
+                    'username'     => $firebaseUser->displayName ?? 'User',
+                    'email'        => $firebaseUser->email ?? uniqid() . '@firebase.local',
+                    'password'     => bcrypt(uniqid()),
+                    'role'         => 'user',
+                ]);
+            }
+
+            Auth::login($user);
+
+            return response()->json(['message' => 'Authenticated'], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Firebase authentication failed',
+                'error'   => $e->getMessage()
+            ], 401);
+        }
     }
 }

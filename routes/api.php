@@ -16,13 +16,15 @@ use App\Http\Controllers\Api\ModelController;
 use App\Http\Controllers\Api\AppKeyController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\EmailVerificationController;
-
+use App\Http\Controllers\Api\FirebaseAuthController;
 // Authentication
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
 Route::post('password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('password/reset',  [AuthController::class, 'resetPassword']);
 Route::post('auth/google', [AuthController::class, 'googleLogin']);
+Route::post('/firebase-auth', [AuthController::class, 'firebaseAuthenticate']);
+Route::post('/firebase-auth', [FirebaseAuthController::class, 'authenticate']);
 
 // محميّات المصادقة
 Route::middleware('auth:sanctum')->group(function () {
