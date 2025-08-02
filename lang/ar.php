@@ -1,0 +1,27 @@
+<?php
+
+return array (
+  'actions' => 'الإجراءات',
+  'author' => 'الكاتب',
+  'categories' => 'التصنيفات',
+  'category' => 'التصنيف',
+  'content' => 'المحتوى',
+  'create' => 'إضافة',
+  'created_at' => 'تاريخ الإنشاء',
+  'dashboard' => 'لوحة التحكم',
+  'delete' => 'حذف',
+  'draft' => 'مسودة',
+  'edit' => 'تعديل',
+  'image' => 'الصورة',
+  'logout' => 'تسجيل الخروج',
+  'posts' => 'المقالات',
+  'published' => 'منشور',
+  'save' => 'حفظ',
+  'settings' => 'الإعدادات',
+  'status' => 'الحالة',
+  'title' => 'العنوان',
+  'translations' => 'ترجمة لوحة التحكم',
+  'updated_at' => 'تاريخ التعديل',
+  'users' => 'المستخدمون',
+  'view' => 'عرض',
+);
